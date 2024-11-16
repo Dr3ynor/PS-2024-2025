@@ -1,0 +1,23 @@
+integrate a/x dx from 1 to e = 1
+
+(a - konstanta)
+
+
+
+ZAOKROUHLENÍ:
+rozsah - není potřeba zaokrouhlovat
+počet hodnot - není potřeba
+
+min/max - nezaokrouhlují se - pokud se nejedná o vypočítáné hodnoty
+
+dolní kvartil Q1 - 
+median
+průměr
+Q3 - 
+rozptyl
+směrodat. odchylka - zaokrouhluje se podle počtu dat (viz dokument o zaokrouhlování) - > ostatní položky zaokrouhluju na stejný řád co směrodat. odch.
+platné cifry 0,0670 - 3 platné cifry -> zaokrouhli na první platnou cifru 0,0670 => 0.07
+
+variační koeficient - desetiny procent
+
+šikmost/špičatost - porovnávám s nulou mezi -2 a 2 - zaokrouhlím na desetiny
