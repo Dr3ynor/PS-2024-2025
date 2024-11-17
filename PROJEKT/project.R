@@ -1,12 +1,12 @@
-install.packages("readxl")
-install.packages("moments")
-install.packages("dplyr")
-install.packages("tidyr")
-install.packages("ggplot2")
-install.packages("ggpubr")
-install.packages("rstatix")
-install.packages("forcats")
-install.packages("svglite")
+# install.packages("readxl")
+# install.packages("moments")
+# install.packages("dplyr")
+# install.packages("tidyr")
+# install.packages("ggplot2")
+# install.packages("ggpubr")
+# install.packages("rstatix")
+# install.packages("forcats")
+# install.packages("svglite")
 
 library(readxl)
 library(moments)
@@ -22,7 +22,7 @@ getwd()
 # setwd("/home/jakub/school/7th_semester/PS/PROJEKT")
 setwd("C:/Users/kubik/Desktop/projects/PS-2024-2025/PROJEKT")
 data = read_excel("ukol_181.xlsx", sheet = "vysledky_mereni")
-# data = na.omit(data)
+data = na.omit(data)
 
 colnames(data) = c("id","2080Ti_release","2080Ti_patched","3070Ti_release","3070Ti_patched","6800XT_release","6800XT_patched","7700XT_release","7700XT_patched") 
 colnames(data)
@@ -59,6 +59,10 @@ remove_outliers <- function(x) {
   lower_bound <- Q1 - 1.5 * IQR
   upper_bound <- Q3 + 1.5 * IQR
   
+  print(paste("Lower bound:", lower_bound))
+  print(paste("Upper bound:", upper_bound))
+
+
   cleaned_data <- x[x >= lower_bound & x <= upper_bound]
   return(cleaned_data)
 }
@@ -167,7 +171,7 @@ par(mfrow=c(1, 2))
 qqnorm(rx7700xt_cleaned, main="RX 7700 XT", xlab="Norm. teoretické kvantily", ylab="Výběrové kvantily")
 qqline(rx7700xt_cleaned, col="black")
 # Histogram for RX 7700 XT
-hist(rx7700xt_cleaned, main="RX 7700 XT", xlab="Nárůst FPS", ylab="Četnost", col="gray", border="black")
+hist(rx7700xt_cleaned, main="RX 7700 XT", xlab="Hodnota", ylab="Četnost", col="gray", border="black")
 par(mfrow=c(1, 1))
 dev.off()
 
@@ -182,3 +186,80 @@ qqline(rtx3070Ti_cleaned, col="black")
 hist(rtx3070Ti_cleaned, main="RTX 3070 Ti", xlab="Hodnota", ylab="Četnost", col="gray", border="black")
 par(mfrow=c(1, 1))
 dev.off()
+
+
+
+# Outliers
+
+rtx3070ti_release_df <- data.frame(id = data$id, rtx3070ti_release = rtx3070ti_release)
+rtx3070ti_patched_df <- data.frame(id = data$id, rtx3070ti_patched = rtx3070ti_patched)
+rx7700xt_release_df <- data.frame(id = data$id, rx7700xt_release = rx7700xt_release)
+rx7700xt_patched_df <- data.frame(id = data$id, rx7700xt_patched = rx7700xt_patched)
+
+# Funkce pro identifikaci outlierů
+identify_outliers <- function(df, value_col) {
+  # Vypočítáme kvartily a IQR
+  Q1 <- quantile(df[[value_col]], 0.25, na.rm = TRUE)
+  Q3 <- quantile(df[[value_col]], 0.75, na.rm = TRUE)
+  IQR <- Q3 - Q1
+  
+  # Mezní hodnoty pro outliery
+  lower_bound <- Q1 - 1.5 * IQR
+  upper_bound <- Q3 + 1.5 * IQR
+  
+  # Filtrace outlierů
+  outliers <- df %>%
+    filter((.data[[value_col]] < lower_bound) | (.data[[value_col]] > upper_bound))
+  
+  return(outliers)
+}
+
+
+# Vytvoření nového sloupce pro rozdíl FPS (patched - release)
+data <- data %>%
+  mutate(rtx3070ti_difference = rtx3070ti_patched - rtx3070ti_release,
+         rx7700xt_difference = rx7700xt_patched - rx7700xt_release)
+
+# Funkce pro identifikaci outlierů na základě rozdílu FPS
+identify_outliers_diff <- function(df, id_col, diff_col) {
+  Q1 <- quantile(df[[diff_col]], 0.25, na.rm = TRUE)
+  Q3 <- quantile(df[[diff_col]], 0.75, na.rm = TRUE)
+  IQR <- Q3 - Q1
+  
+  lower_bound <- Q1 - 1.5 * IQR
+  upper_bound <- Q3 + 1.5 * IQR
+  
+  outliers <- df %>%
+    filter((.data[[diff_col]] < lower_bound) | (.data[[diff_col]] > upper_bound)) %>%
+    select(all_of(id_col), all_of(diff_col))
+  
+  return(outliers)
+}
+
+# Identifikace outlierů pro RTX 3070Ti a RX 7700XT
+rtx3070ti_outliers <- identify_outliers_diff(data, "id", "rtx3070ti_difference")
+rx7700xt_outliers <- identify_outliers_diff(data, "id", "rx7700xt_difference")
+
+# Výpis outlierů
+cat("RTX 3070Ti Difference Outliers:\n")
+print(rtx3070ti_outliers)
+
+cat("\nRX 7700XT Difference Outliers:\n")
+print(rx7700xt_outliers)
+
+
+
+# Funkce pro výpočet sigma intervalu
+sigma_interval <- function(df, value_col, sigma) {
+  mean_val <- mean(df, na.rm = TRUE)
+  sd_val <- sd(df, na.rm = TRUE)
+  
+  lower_bound <- mean_val - sigma * sd_val
+  upper_bound <- mean_val + sigma * sd_val
+  
+  return(c(lower_bound, upper_bound))
+}
+
+# Výpočet 2 sigma intervalu pro RTX 3070Ti a RX 7700XT
+rtx3070ti_sigma_interval <- sigma_interval(rtx3070Ti_cleaned, "rtx3070ti_difference", 2)
+rx7700xt_sigma_interval <- sigma_interval(rx7700xt_cleaned, "rx7700xt_difference",2)
